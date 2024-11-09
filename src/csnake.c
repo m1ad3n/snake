@@ -75,6 +75,12 @@ void swindow_check_events(swindow_t* sw) {
 			break;
 
 		case SDL_KEYUP:
+			if (sw->event.key.keysym.sym == SDLK_ESCAPE) {
+				sw->quit = 1;
+				break;
+			}
+			if (sw->quit > 0) break;
+
 			switch (sw->event.key.keysym.sym) {
 			case SDLK_LEFT:
 				if (sw->snake->direction != SD_RIGHT)
@@ -96,9 +102,6 @@ void swindow_check_events(swindow_t* sw) {
 					sw->snake->direction = SD_DOWN;
 				break;
 
-			case SDLK_ESCAPE:
-				sw->quit = SDL_TRUE;
-				break;
 			}
 
 			break;
@@ -126,7 +129,7 @@ void swindow_gameloop(swindow_t* sw) {
 	SDL_Surface* score_surface = TTF_RenderText_Blended(sw->font, "Score: 0", (SDL_Color){255, 255, 255, 255});
 	SDL_Texture* score_texture = SDL_CreateTextureFromSurface(sw->rptr, score_surface);
 
-	while (!sw->quit) {
+	while (sw->quit != 1) {
 		// check window events
 		swindow_check_events(sw);
 		
@@ -152,6 +155,7 @@ void swindow_gameloop(swindow_t* sw) {
 		}
 		else if (cc == 2) {
 			sw->snake->direction = SD_NONE;
+			sw->quit = 2;
 
 			SDL_FreeSurface(score_surface);
 			SDL_DestroyTexture(score_texture);
@@ -187,7 +191,8 @@ void swindow_gameloop(swindow_t* sw) {
 }
 
 int swindow_check_collision(swindow_t* sw) {
-	SDL_Rect snake_head = sw->snake->head->rect; 
+	if (sw->snake->direction == SD_NONE) return 0;
+	SDL_Rect snake_head = sw->snake->head->rect;
 	if (snake_head.x < sw->fruit.x + sw->fruit.w &&
 		snake_head.x + snake_head.w > sw->fruit.x &&
 		snake_head.y < sw->fruit.y + sw->fruit.h &&
@@ -195,9 +200,9 @@ int swindow_check_collision(swindow_t* sw) {
 			return 1; // fruit eaten
 
 	// check for screen bounds
-	if (snake_head.x < 0 || snake_head.x > sw->width)
+	if (snake_head.x < 0 || (snake_head.x + snake_head.w) > sw->width)
 		return 2;
-	else if (snake_head.y < 50 || snake_head.y > sw->height)
+	else if (snake_head.y < 50 || (snake_head.y + snake_head.h) > sw->height)
 		return 2;
 
 	snake_body_t* tmp = sw->snake->head->next;
